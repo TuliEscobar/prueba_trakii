@@ -114,6 +114,8 @@ El componente de nivel de batería (Prueba_3) ofrece las siguientes funcionalida
 - **Control Manual**: Incluye un botón para actualizar manualmente y un interruptor para activar/desactivar la actualización automática
 - **Historial Visual**: Muestra un registro gráfico de los últimos niveles de batería
 
+> **IMPORTANTE**: Al igual que con Prueba_4, para el funcionamiento correcto de este componente es necesario tener en ejecución tanto `battery_api.py` como `prueba_1_trakii.py` de la carpeta Prueba_1.
+
 ## 🗺️ Panel de Detalles del Dispositivo
 
 El panel de detalles del dispositivo (Prueba_4) incluye las siguientes características:
@@ -162,4 +164,4 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 
 ---
 
-© 2025 Sistema de Monitoreo de Dispositivos Trakii 
+Desarrollado por [Héctor Escobar](https://github.com/TuliEscobar) | [LinkedIn](https://www.linkedin.com/in/hectorescobar11) 
