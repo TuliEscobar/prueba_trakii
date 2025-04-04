@@ -1,6 +1,5 @@
 /**
- * Panel de Detalles del Dispositivo
- * Script para mostrar información detallada del dispositivo y su ubicación
+ * Panel de Detalles del Dispositivo - Versión Simplificada
  */
 
 // Elementos del DOM
@@ -19,225 +18,360 @@ const batteryStatusElement = document.getElementById('battery-status');
 const refreshBtn = document.getElementById('refresh-btn');
 const autoUpdateToggle = document.getElementById('auto-update');
 
-// API para obtener datos del dispositivo (simulación)
-const API_URL = 'http://localhost:5000';
+// URLs de API
+const API_URL = 'http://127.0.0.1:5000';
+const LOCATION_JSON_URL = './coordenadas.json';
 
-// Configuración
-const CONFIG = {
-    updateInterval: 10000,  // 10 segundos
-    defaultLatLng: [19.4326, -99.1332],  // Ciudad de México
-    mapZoom: 13,
-    geocodingApis: {
-        // Opciones de API para geocodificación inversa
-        openStreetMap: 'https://nominatim.openstreetmap.org/reverse',
-        positionStack: 'http://api.positionstack.com/v1/reverse'
-    },
-    apiKey: {
-        // API keys (reemplazar con tus propias claves)
-        positionStack: 'YOUR_API_KEY'
-    }
-};
-
-// Variables de estado
+// Variables globales
 let map;
 let marker;
-let currentPosition = CONFIG.defaultLatLng;
-let deviceData = null;
 let updateTimer = null;
-let isOnline = true;
 
 // Inicializar la aplicación
 function initApp() {
-    // Inicializar el mapa
+    // Mostrar mensaje de inicio
+    showStatus("Inicializando aplicación...");
+    
+    // Limpiar datos antiguos estáticos
+    deviceIdElement.textContent = "Cargando...";
+    serialNumberElement.textContent = "Cargando...";
+    deviceModelElement.textContent = "Cargando...";
+    firmwareElement.textContent = "Cargando...";
+    batteryLevelElement.textContent = "Cargando...";
+    batteryStatusElement.textContent = "Cargando...";
+    
+    // Inicializar mapa
     initMap();
     
     // Cargar datos iniciales
-    updateDeviceData();
+    loadAllData();
     
-    // Iniciar actualizaciones automáticas
-    startAutoUpdate();
+    // Configurar botones
+    refreshBtn.addEventListener('click', loadAllData);
+    autoUpdateToggle.addEventListener('change', toggleAutoUpdate);
     
-    // Configurar eventos
-    setupEventListeners();
-}
-
-// Inicializar el mapa con Leaflet
-function initMap() {
-    // Crear el mapa centrado en la posición por defecto
-    map = L.map(mapElement).setView(CONFIG.defaultLatLng, CONFIG.mapZoom);
-    
-    // Añadir capa de OpenStreetMap
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-    
-    // Añadir marcador inicial
-    marker = L.marker(CONFIG.defaultLatLng).addTo(map);
-    marker.bindPopup("<b>Dispositivo TRAKII-001</b><br>Ubicación actual").openPopup();
-}
-
-// Actualizar los datos del dispositivo
-async function updateDeviceData() {
-    try {
-        // Simular una conexión a la API
-        if (Math.random() > 0.1) { // 90% de probabilidad de estar online
-            isOnline = true;
-            
-            // Obtener nuevos datos del dispositivo
-            deviceData = await fetchDeviceData();
-            
-            // Actualizar la interfaz con los nuevos datos
-            updateUI(deviceData);
-            
-            // Actualizar el mapa con la nueva posición
-            updateMapPosition(deviceData.location.latitude, deviceData.location.longitude);
-            
-            // Obtener y mostrar la dirección física
-            getAddress(deviceData.location.latitude, deviceData.location.longitude);
-        } else {
-            // Simular dispositivo desconectado
-            isOnline = false;
-            updateConnectionStatus(false);
-        }
-        
-        // Actualizar la marca de tiempo
-        updateTimestamp();
-    } catch (error) {
-        console.error("Error al actualizar datos:", error);
-        
-        // Modo fallback: Usar datos aleatorios si la API falla
-        simulateRandomData();
+    // Iniciar actualización automática si está activado
+    if (autoUpdateToggle.checked) {
+        startAutoUpdate();
     }
 }
 
-// Obtener datos del dispositivo (simulación API)
-async function fetchDeviceData() {
-    // En un escenario real, esta función haría un fetch a tu API
-    // Por ahora, simularemos los datos
+// Inicializar mapa
+function initMap() {
+    showStatus("Inicializando mapa...");
     
-    // Generar variación pequeña en la posición para simular movimiento
-    const latVariation = (Math.random() - 0.5) * 0.005;
-    const lngVariation = (Math.random() - 0.5) * 0.005;
-    
-    const lat = CONFIG.defaultLatLng[0] + latVariation;
-    const lng = CONFIG.defaultLatLng[1] + lngVariation;
-    
-    // Simular nivel de batería
-    const batteryLevel = Math.floor(Math.random() * 100);
-    
-    // Datos simulados
-    return {
-        deviceId: "TRAKII-001",
-        serialNumber: "SN-78956423",
-        model: "Tracker GPS Pro",
-        firmware: "v2.5.3",
-        status: "connected",
-        battery: {
-            level: batteryLevel,
-            status: batteryLevel > 40 ? "optimal" : (batteryLevel > 20 ? "low" : "critical")
-        },
-        location: {
-            latitude: lat,
-            longitude: lng,
-            accuracy: 5 + Math.floor(Math.random() * 10)
-        },
-        lastUpdate: new Date().toISOString()
-    };
+    try {
+        // Posición inicial
+        const initialPosition = [19.4326, -99.1332];
+        
+        // Crear mapa
+        map = L.map(mapElement).setView(initialPosition, 13);
+        
+        // Añadir capa de mapa
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+        
+        // Añadir marcador inicial
+        marker = L.marker(initialPosition).addTo(map);
+        marker.bindPopup("Cargando datos del dispositivo...").openPopup();
+        
+        showStatus("Mapa inicializado correctamente");
+    } catch (error) {
+        showError("Error al inicializar el mapa: " + error.message);
+    }
 }
 
-// Actualizar la interfaz con los nuevos datos
-function updateUI(data) {
-    // Actualizar información de dispositivo
-    deviceIdElement.textContent = data.deviceId;
-    serialNumberElement.textContent = data.serialNumber;
-    deviceModelElement.textContent = data.model;
-    firmwareElement.textContent = data.firmware;
+// Cargar todos los datos
+async function loadAllData() {
+    showStatus("Cargando datos...");
+    
+    try {
+        // 1. Obtener nivel de batería 
+        let batteryData = null;
+        try {
+            batteryData = await getBatteryData();
+            showStatus("Datos de batería obtenidos: " + JSON.stringify(batteryData));
+        } catch (batteryError) {
+            showError("Error al obtener batería: " + batteryError.message);
+            // Fallback
+            batteryData = {
+                level: Math.floor(Math.random() * 100),
+                status: "normal"
+            };
+        }
+        
+        // 2. Obtener información del dispositivo
+        let deviceInfo = null;
+        try {
+            deviceInfo = await getDeviceInfo();
+            showStatus("Datos del dispositivo obtenidos: " + JSON.stringify(deviceInfo));
+        } catch (deviceError) {
+            showError("Error al obtener información del dispositivo: " + deviceError.message);
+            // Fallback
+            deviceInfo = {
+                device_id: "ERROR-ID",
+                model: "Sin conexión",
+                firmware_version: "N/A",
+                status: "Inactive"
+            };
+        }
+        
+        // 3. Obtener datos de ubicación
+        let locationData = null;
+        try {
+            locationData = await getLocationData();
+            showStatus("Datos de ubicación obtenidos: " + JSON.stringify(locationData));
+        } catch (locationError) {
+            showError("Error al obtener ubicación: " + locationError.message);
+            // Fallback
+            locationData = {
+                lat: 39.5696,
+                lng: 2.6502
+            };
+        }
+        
+        // 4. Actualizar la interfaz con todos los datos
+        if (deviceInfo) {
+            updateDeviceInfo(deviceInfo);
+        }
+        
+        if (batteryData) {
+            updateBatteryInfo(batteryData);
+        }
+        
+        if (locationData) {
+            updateLocationInfo(locationData);
+        }
+        
+        // 5. Actualizar marca de tiempo
+        updateTimestamp();
+        
+        showStatus("Todos los datos cargados correctamente");
+    } catch (error) {
+        showError("Error general al cargar datos: " + error.message);
+    }
+}
+
+// Obtener nivel de batería de la API
+async function getBatteryData() {
+    try {
+        showStatus("Intentando obtener datos de batería desde: " + API_URL + "/battery");
+        
+        const response = await fetch(`${API_URL}/battery`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
+            },
+            mode: 'cors'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP Error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        showStatus("Datos de batería recibidos correctamente: " + JSON.stringify(data));
+        return data;
+    } catch (error) {
+        showError("Error al obtener batería: " + error.message);
+        // Devolver datos ficticios como fallback
+        return {
+            level: Math.floor(Math.random() * 100),
+            status: "critical",
+            timestamp: new Date().toISOString()
+        };
+    }
+}
+
+// Obtener información del dispositivo de la API
+async function getDeviceInfo() {
+    try {
+        showStatus("Intentando obtener información del dispositivo desde: " + API_URL + "/device-info");
+        
+        const response = await fetch(`${API_URL}/device-info`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
+            },
+            mode: 'cors'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP Error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        showStatus("Información del dispositivo recibida correctamente: " + JSON.stringify(data));
+        return data;
+    } catch (error) {
+        showError("Error al obtener info del dispositivo: " + error.message);
+        // Devolver datos ficticios como fallback
+        return {
+            device_id: "API-ERROR",
+            model: "Error de conexión",
+            firmware_version: "N/A",
+            status: "Inactive",
+            last_report: new Date().toISOString()
+        };
+    }
+}
+
+// Obtener datos de ubicación del JSON
+async function getLocationData() {
+    showStatus("Intentando obtener ubicación desde: " + LOCATION_JSON_URL);
+    
+    // Intentar diferentes rutas para el archivo de coordenadas
+    const possiblePaths = [
+        './Prueba_2/coordenadas.json',
+        '../Prueba_2/coordenadas.json',
+        'Prueba_2/coordenadas.json',
+        '/Prueba_2/coordenadas.json',
+        'coordenadas.json'
+    ];
+    
+    // Tratar de usar coordenadas hardcodeadas si todo falla
+    const fallbackCoordinates = {
+        lat: 39.5696,
+        lng: 2.6502
+    };
+    
+    // Intentar acceder a cada posible ruta
+    for (const path of possiblePaths) {
+        try {
+            showStatus(`Probando ruta: ${path}`);
+            
+            const response = await fetch(path);
+            
+            if (response.ok) {
+                const data = await response.json();
+                showStatus(`Éxito obteniendo ubicación desde: ${path}`);
+                return data;
+            }
+        } catch (error) {
+            showError(`Fallo al obtener ubicación desde ${path}: ${error.message}`);
+        }
+    }
+    
+    // Si todas las rutas fallan, usar valores predeterminados
+    showStatus("Usando coordenadas predeterminadas como fallback");
+    return fallbackCoordinates;
+}
+
+// Actualizar información del dispositivo en la interfaz
+function updateDeviceInfo(deviceInfo) {
+    if (!deviceInfo) return;
+    
+    deviceIdElement.textContent = deviceInfo.device_id || "No disponible";
+    serialNumberElement.textContent = deviceInfo.device_id || "No disponible";
+    deviceModelElement.textContent = deviceInfo.model || "No disponible";
+    firmwareElement.textContent = deviceInfo.firmware_version || "No disponible";
     
     // Actualizar estado de conexión
-    updateConnectionStatus(data.status === "connected");
-    
-    // Actualizar nivel de batería
-    updateBatteryInfo(data.battery.level, data.battery.status);
-    
-    // Actualizar coordenadas
-    const lat = data.location.latitude.toFixed(6);
-    const lng = data.location.longitude.toFixed(6);
-    coordinatesElement.textContent = `${lat}, ${lng}`;
-}
-
-// Actualizar estado de conexión
-function updateConnectionStatus(isConnected) {
+    const isConnected = deviceInfo.status === "Active";
     const statusIndicator = connectionStatusElement.querySelector('.status-indicator');
     const statusText = connectionStatusElement.querySelector('.status-text');
     
     if (isConnected) {
-        statusIndicator.className = 'status-indicator connected';
-        statusText.textContent = 'Conectado';
-        statusText.className = 'status-text text-success';
+        statusIndicator.className = "status-indicator connected";
+        statusText.textContent = "Conectado";
+        statusText.className = "status-text text-success";
     } else {
-        statusIndicator.className = 'status-indicator disconnected';
-        statusText.textContent = 'Desconectado';
-        statusText.className = 'status-text text-danger';
+        statusIndicator.className = "status-indicator disconnected";
+        statusText.textContent = "Desconectado";
+        statusText.className = "status-text text-danger";
     }
 }
 
-// Actualizar información de batería
-function updateBatteryInfo(level, status) {
-    // Actualizar texto de nivel
+// Actualizar información de batería en la interfaz
+function updateBatteryInfo(batteryData) {
+    if (!batteryData) return;
+    
+    const level = batteryData.level;
+    
+    // Actualizar texto
     batteryLevelElement.textContent = `${level}%`;
     
     // Actualizar barra de progreso
     batteryLevelBarElement.style.width = `${level}%`;
     
-    // Actualizar color y texto según nivel
-    if (level <= 20) {
-        batteryLevelBarElement.className = 'progress-bar bg-danger';
-        batteryStatusElement.textContent = 'Crítico';
-        batteryStatusElement.className = 'detail-value text-danger';
-    } else if (level <= 40) {
-        batteryLevelBarElement.className = 'progress-bar bg-warning';
-        batteryStatusElement.textContent = 'Bajo';
-        batteryStatusElement.className = 'detail-value text-warning';
+    // Determinar estado y color
+    let statusText = "";
+    let colorClass = "";
+    
+    if (batteryData.status === "critical" || level <= 20) {
+        statusText = "Crítico";
+        colorClass = "bg-danger";
+        batteryStatusElement.className = "detail-value text-danger";
+    } else if (batteryData.status === "warning" || level <= 40) {
+        statusText = "Bajo";
+        colorClass = "bg-warning";
+        batteryStatusElement.className = "detail-value text-warning";
     } else {
-        batteryLevelBarElement.className = 'progress-bar bg-success';
-        batteryStatusElement.textContent = 'Óptimo';
-        batteryStatusElement.className = 'detail-value text-success';
+        statusText = "Óptimo";
+        colorClass = "bg-success";
+        batteryStatusElement.className = "detail-value text-success";
+    }
+    
+    batteryStatusElement.textContent = statusText;
+    batteryLevelBarElement.className = `progress-bar ${colorClass}`;
+}
+
+// Actualizar información de ubicación en la interfaz
+function updateLocationInfo(locationData) {
+    if (!locationData || !locationData.lat || !locationData.lng) {
+        showStatus("Sin datos de ubicación válidos");
+        return;
+    }
+    
+    try {
+        const lat = locationData.lat;
+        const lng = locationData.lng;
+        
+        // Actualizar coordenadas en la interfaz
+        coordinatesElement.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        
+        // Actualizar marcador en el mapa
+        const newPosition = [lat, lng];
+        marker.setLatLng(newPosition);
+        map.setView(newPosition, 13);
+        
+        // Actualizar popup con información básica
+        marker.setPopupContent(`
+            <b>Ubicación del dispositivo</b><br>
+            Latitud: ${lat.toFixed(6)}<br>
+            Longitud: ${lng.toFixed(6)}
+        `).openPopup();
+        
+        // Obtener dirección
+        getAddress(lat, lng);
+        
+    } catch (error) {
+        showError("Error al actualizar mapa: " + error.message);
     }
 }
 
-// Actualizar posición en el mapa
-function updateMapPosition(lat, lng) {
-    // Guardar posición actual
-    currentPosition = [lat, lng];
-    
-    // Actualizar posición del marcador
-    marker.setLatLng(currentPosition);
-    
-    // Centrar el mapa en la nueva posición
-    map.setView(currentPosition, CONFIG.mapZoom);
-    
-    // Actualizar popup del marcador
-    marker.setPopupContent(`
-        <b>Dispositivo ${deviceData.deviceId}</b><br>
-        Latitud: ${lat.toFixed(6)}<br>
-        Longitud: ${lng.toFixed(6)}<br>
-        Precisión: ${deviceData.location.accuracy}m
-    `);
-}
-
-// Obtener dirección a partir de coordenadas (geocodificación inversa)
+// Obtener dirección a partir de coordenadas
 async function getAddress(lat, lng) {
     try {
-        // Mostrar estado de carga
-        showAddressLoading();
+        // Mostrar mensaje de carga
+        addressElement.innerHTML = `
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <span>Obteniendo dirección...</span>
+        `;
         
-        // Intentar obtener la dirección usando OpenStreetMap (Nominatim)
-        const url = `${CONFIG.geocodingApis.openStreetMap}?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+        // URL de API de geocodificación
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
         
+        // Solicitud
         const response = await fetch(url, {
             headers: {
-                'Accept-Language': 'es', // Solicitar respuesta en español
-                'User-Agent': 'TrakiiDeviceMonitor/1.0' // Identificación para Nominatim
+                'Accept-Language': 'es',
+                'User-Agent': 'TrakiiDeviceMonitor/1.0'
             }
         });
         
@@ -246,92 +380,32 @@ async function getAddress(lat, lng) {
         }
         
         const data = await response.json();
+        showStatus("Dirección obtenida");
         
-        // Formatear y mostrar la dirección
-        const address = formatAddress(data);
-        showAddress(address);
+        // Formatear dirección
+        let address = "";
+        
+        if (data.display_name) {
+            address = data.display_name.replace(/,/g, "<br>");
+        } else if (data.address) {
+            const parts = [];
+            if (data.address.road) parts.push(data.address.road);
+            if (data.address.city || data.address.town) parts.push(data.address.city || data.address.town);
+            if (data.address.state) parts.push(data.address.state);
+            if (data.address.country) parts.push(data.address.country);
+            
+            address = parts.join("<br>");
+        } else {
+            address = "Dirección no disponible";
+        }
+        
+        // Mostrar en la interfaz
+        addressElement.innerHTML = address;
         
     } catch (error) {
-        console.error("Error al obtener la dirección:", error);
-        showAddressError();
+        showError("Error al obtener dirección: " + error.message);
+        addressElement.innerHTML = "<span class='text-danger'>No se pudo obtener la dirección</span>";
     }
-}
-
-// Formatear objeto de dirección de Nominatim
-function formatAddress(data) {
-    // Si no hay datos, mostrar mensaje genérico
-    if (!data || !data.address) {
-        return "Dirección no disponible";
-    }
-    
-    // Extraer componentes de la dirección
-    const {
-        road, 
-        house_number, 
-        neighbourhood, 
-        suburb,
-        city, 
-        town,
-        state, 
-        postcode, 
-        country
-    } = data.address;
-    
-    // Construir dirección formateada
-    let formattedAddress = '';
-    
-    // Línea 1: Calle y número
-    if (road) {
-        formattedAddress += road;
-        if (house_number) formattedAddress += ` ${house_number}`;
-        formattedAddress += '<br>';
-    }
-    
-    // Línea 2: Colonia/Barrio
-    if (neighbourhood || suburb) {
-        formattedAddress += `Col. ${neighbourhood || suburb}<br>`;
-    }
-    
-    // Línea 3: Ciudad/Municipio, Estado, CP
-    if (city || town) {
-        formattedAddress += city || town;
-        if (state) formattedAddress += `, ${state}`;
-        if (postcode) formattedAddress += ` C.P. ${postcode}`;
-        formattedAddress += '<br>';
-    } else if (state) {
-        formattedAddress += `${state}`;
-        if (postcode) formattedAddress += ` C.P. ${postcode}`;
-        formattedAddress += '<br>';
-    }
-    
-    // Línea 4: País
-    if (country) {
-        formattedAddress += country;
-    }
-    
-    return formattedAddress || "Dirección no disponible";
-}
-
-// Mostrar estado de carga para la dirección
-function showAddressLoading() {
-    addressElement.innerHTML = `
-        <div class="spinner-border spinner-border-sm text-primary" role="status">
-            <span class="visually-hidden">Cargando...</span>
-        </div>
-        <span>Obteniendo dirección...</span>
-    `;
-}
-
-// Mostrar dirección obtenida
-function showAddress(address) {
-    addressElement.innerHTML = address;
-}
-
-// Mostrar error al obtener dirección
-function showAddressError() {
-    addressElement.innerHTML = `
-        <span class="text-danger">No se pudo obtener la dirección</span>
-    `;
 }
 
 // Actualizar marca de tiempo
@@ -340,78 +414,72 @@ function updateTimestamp() {
     lastUpdateElement.textContent = now.toLocaleTimeString();
 }
 
-// Simular datos aleatorios (fallback)
-function simulateRandomData() {
-    // Crear datos simulados
-    const randomData = {
-        deviceId: "TRAKII-001",
-        serialNumber: "SN-78956423",
-        model: "Tracker GPS Pro",
-        firmware: "v2.5.3",
-        status: Math.random() > 0.3 ? "connected" : "disconnected",
-        battery: {
-            level: Math.floor(Math.random() * 100),
-            status: "unknown"
-        },
-        location: {
-            latitude: CONFIG.defaultLatLng[0] + (Math.random() - 0.5) * 0.01,
-            longitude: CONFIG.defaultLatLng[1] + (Math.random() - 0.5) * 0.01,
-            accuracy: 10 + Math.floor(Math.random() * 20)
-        },
-        lastUpdate: new Date().toISOString()
-    };
-    
-    // Determinar estado de batería
-    randomData.battery.status = randomData.battery.level > 40 
-        ? "optimal" 
-        : (randomData.battery.level > 20 ? "low" : "critical");
-    
-    // Actualizar la interfaz con los datos aleatorios
-    updateUI(randomData);
-    
-    // Actualizar el mapa
-    updateMapPosition(randomData.location.latitude, randomData.location.longitude);
-    
-    // Intentar obtener la dirección
-    getAddress(randomData.location.latitude, randomData.location.longitude);
-    
-    // Guardar los datos
-    deviceData = randomData;
-}
-
-// Configurar eventos de la interfaz
-function setupEventListeners() {
-    // Botón de actualización manual
-    refreshBtn.addEventListener('click', () => {
-        updateDeviceData();
-    });
-    
-    // Toggle de actualización automática
-    autoUpdateToggle.addEventListener('change', () => {
-        if (autoUpdateToggle.checked) {
-            startAutoUpdate();
-        } else {
-            stopAutoUpdate();
-        }
-    });
-}
-
-// Iniciar actualizaciones automáticas
+// Iniciar actualización automática
 function startAutoUpdate() {
     if (!updateTimer) {
-        updateTimer = setInterval(() => {
-            updateDeviceData();
-        }, CONFIG.updateInterval);
+        updateTimer = setInterval(loadAllData, 10000);
+        showStatus("Actualizaciones automáticas iniciadas");
     }
 }
 
-// Detener actualizaciones automáticas
+// Detener actualización automática
 function stopAutoUpdate() {
     if (updateTimer) {
         clearInterval(updateTimer);
         updateTimer = null;
+        showStatus("Actualizaciones automáticas detenidas");
     }
 }
 
-// Inicializar la aplicación cuando el DOM esté cargado
+// Alternar actualización automática
+function toggleAutoUpdate() {
+    if (autoUpdateToggle.checked) {
+        startAutoUpdate();
+    } else {
+        stopAutoUpdate();
+    }
+}
+
+// Mostrar mensaje de estado en la consola
+function showStatus(message) {
+    console.log(`[INFO] ${message}`);
+}
+
+// Mostrar error en la consola y en la interfaz si es crítico
+function showError(message) {
+    console.error(`[ERROR] ${message}`);
+    
+    // Mostrar error en la interfaz para facilitar la depuración
+    const errorBox = document.createElement('div');
+    errorBox.className = 'alert alert-danger mt-2';
+    errorBox.role = 'alert';
+    errorBox.textContent = `Error: ${message}`;
+    
+    // Añadir botón para cerrar
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'btn-close';
+    closeButton.setAttribute('data-bs-dismiss', 'alert');
+    closeButton.setAttribute('aria-label', 'Close');
+    closeButton.onclick = function() {
+        errorBox.remove();
+    };
+    
+    errorBox.appendChild(closeButton);
+    
+    // Añadir a la página (como primer hijo del contenedor principal)
+    const container = document.querySelector('.container');
+    if (container) {
+        container.insertBefore(errorBox, container.firstChild);
+        
+        // Auto eliminar después de 10 segundos
+        setTimeout(() => {
+            if (errorBox.parentNode) {
+                errorBox.remove();
+            }
+        }, 10000);
+    }
+}
+
+// Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', initApp); 
