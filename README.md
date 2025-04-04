@@ -80,6 +80,8 @@ Esto iniciará un servidor en `http://localhost:5000` con los siguientes endpoin
 - `/battery` - Devuelve el nivel actual de batería
 - `/device-info` - Devuelve información del dispositivo
 
+> **IMPORTANTE**: Para el funcionamiento correcto de Prueba_4, es necesario tener en ejecución tanto `battery_api.py` como `prueba_1_trakii.py` de la carpeta Prueba_1. Asegúrate de que el puerto 5000 esté disponible.
+
 ### 2. Acceder a los Componentes Web
 
 Hay dos formas de acceder a los componentes web:
@@ -125,9 +127,10 @@ El panel de detalles del dispositivo (Prueba_4) incluye las siguientes caracter�
   - Modelo y versión de firmware
   - Estado de conexión con indicador visual
 - **Indicador de Estado**: Muestra visualmente si el dispositivo está conectado o desconectado
-- **Nivel de Batería**: Visualización del nivel de batería actual con indicadores de color
+- **Nivel de Batería en Tiempo Real**: Obtiene y muestra el nivel de batería desde la API (Prueba_1)
 - **Actualizaciones Automáticas**: Actualización periódica de la información cada 10 segundos
 - **Interfaz Responsiva**: Diseño adaptable a diferentes tamaños de pantalla
+- **Manejo de Errores**: Sistema de fallback si la API no está disponible y mensajes de error visuales
 
 ## 🔌 Integración Backend-Frontend
 
