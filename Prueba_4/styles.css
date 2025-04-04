@@ -1,0 +1,190 @@
+/* Estilos para el Panel de Detalles del Dispositivo */
+
+/* Estilos generales */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f8fa;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+}
+
+.container-fluid, .row {
+    height: 100vh;
+}
+
+/* Estilos para el mapa */
+#map {
+    height: 100vh;
+    width: 100%;
+    z-index: 1;
+}
+
+/* Estilos para el panel de detalles */
+.details-panel {
+    height: 100vh;
+    background-color: white;
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+/* Encabezado del panel */
+.details-header {
+    background: linear-gradient(135deg, #4a6cf7, #2651de);
+    color: white;
+    padding: 20px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.details-header h2 {
+    font-size: 1.5rem;
+    margin-bottom: 5px;
+}
+
+.last-update {
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.last-update i {
+    margin-right: 5px;
+}
+
+/* Secciones de detalles */
+.details-section {
+    padding: 15px 20px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.details-section h3 {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    color: #495057;
+    display: flex;
+    align-items: center;
+}
+
+.details-section h3 i {
+    margin-right: 8px;
+    color: #4a6cf7;
+}
+
+.details-content {
+    padding-left: 10px;
+}
+
+/* Elementos de detalle */
+.detail-item {
+    margin-bottom: 12px;
+    display: flex;
+    align-items: flex-start;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #6c757d;
+    width: 140px;
+    flex-shrink: 0;
+}
+
+.detail-value {
+    color: #212529;
+    word-break: break-word;
+}
+
+/* Estilos específicos para la dirección */
+.address-container {
+    align-items: flex-start;
+}
+
+.address {
+    line-height: 1.5;
+}
+
+/* Indicador de estado de conexión */
+.status-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.connected {
+    background-color: #28a745;
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+    animation: pulse 2s infinite;
+}
+
+.disconnected {
+    background-color: #dc3545;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.5);
+    }
+    70% {
+        box-shadow: 0 0 0 5px rgba(40, 167, 69, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+    }
+}
+
+/* Barra de nivel de batería */
+.battery-level-container {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.progress {
+    height: 10px;
+    width: 100px;
+    margin-right: 10px;
+    border-radius: 5px;
+    background-color: #e9ecef;
+}
+
+/* Pie del panel */
+.details-footer {
+    margin-top: auto;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Estilos responsivos */
+@media (max-width: 992px) {
+    .container-fluid, .row {
+        height: auto;
+    }
+
+    #map {
+        height: 50vh;
+    }
+
+    .details-panel {
+        height: auto;
+        max-height: 50vh;
+        overflow-y: auto;
+    }
+
+    .details-footer {
+        position: static;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .form-check {
+        align-self: flex-start;
+    }
+} 

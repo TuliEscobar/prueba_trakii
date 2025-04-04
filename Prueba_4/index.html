@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Detalles del Dispositivo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Mapa (lado izquierdo) -->
+            <div class="col-lg-8 p-0">
+                <div id="map"></div>
+            </div>
+            
+            <!-- Panel de detalles (lado derecho) -->
+            <div class="col-lg-4 p-0">
+                <div class="details-panel">
+                    <div class="details-header">
+                        <h2>
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                            Detalles del Dispositivo
+                        </h2>
+                        <p class="last-update mb-0">
+                            <i class="bi bi-clock-history"></i>
+                            Última actualización: <span id="last-update">Cargando...</span>
+                        </p>
+                    </div>
+                    
+                    <!-- Sección de ubicación -->
+                    <div class="details-section">
+                        <h3>
+                            <i class="bi bi-geo-alt-fill"></i>
+                            Ubicación
+                        </h3>
+                        <div class="details-content" id="location-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Coordenadas:</span>
+                                <span id="coordinates" class="detail-value">Cargando...</span>
+                            </div>
+                            <div class="detail-item address-container">
+                                <span class="detail-label">Dirección:</span>
+                                <div id="address" class="detail-value address">
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                        <span class="visually-hidden">Cargando...</span>
+                                    </div>
+                                    <span>Obteniendo dirección...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sección de información del dispositivo -->
+                    <div class="details-section">
+                        <h3>
+                            <i class="bi bi-device-hdd-fill"></i>
+                            Información del Dispositivo
+                        </h3>
+                        <div class="details-content">
+                            <div class="detail-item">
+                                <span class="detail-label">ID del Dispositivo:</span>
+                                <span id="device-id" class="detail-value">TRAKII-001</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Número de Serie:</span>
+                                <span id="serial-number" class="detail-value">SN-78956423</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Modelo:</span>
+                                <span id="device-model" class="detail-value">Tracker GPS Pro</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Versión de Firmware:</span>
+                                <span id="firmware" class="detail-value">v2.5.3</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Estado:</span>
+                                <span id="connection-status" class="detail-value">
+                                    <span class="status-indicator connected"></span>
+                                    <span class="status-text">Conectado</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sección de batería -->
+                    <div class="details-section">
+                        <h3>
+                            <i class="bi bi-battery-half"></i>
+                            Estado de Batería
+                        </h3>
+                        <div class="details-content">
+                            <div class="detail-item">
+                                <span class="detail-label">Nivel:</span>
+                                <div class="battery-level-container">
+                                    <div class="progress">
+                                        <div id="battery-level-bar" class="progress-bar bg-success" role="progressbar" style="width: 75%"></div>
+                                    </div>
+                                    <span id="battery-level" class="detail-value">75%</span>
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Estado:</span>
+                                <span id="battery-status" class="detail-value text-success">Óptimo</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Controles -->
+                    <div class="details-footer">
+                        <button id="refresh-btn" class="btn btn-primary">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Actualizar Datos
+                        </button>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="auto-update" checked>
+                            <label class="form-check-label" for="auto-update">Actualización Automática</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+</html> 
