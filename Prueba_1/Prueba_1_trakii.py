@@ -14,12 +14,15 @@ def battery_monitor():
         print(f"Nivel de batería: {battery_level}%")
         if battery_level < warning_level:
             print("Advertencia: El nivel de batería es menor al 30%.")
-            break
-    time.sleep(5) # Esperamos 5 segundos antes de la siguiente lectura
+        time.sleep(5) # Esperamos 5 segundos antes de la siguiente lectura
     
-    # Iniciar el monitoreo de la batería
+# Iniciar el monitoreo de la batería
 if __name__ == "__main__":
-    battery_monitor()
+    print("Iniciando monitor de batería... Presiona Ctrl+C para detener.")
+    try:
+        battery_monitor()
+    except KeyboardInterrupt:
+        print("\nMonitor de batería detenido por el usuario.")
 
 
 """

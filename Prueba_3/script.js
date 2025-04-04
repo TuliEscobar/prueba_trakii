@@ -1,6 +1,7 @@
 /**
  * Monitor de Batería en Tiempo Real
- * Script para simular y visualizar los niveles de batería de dispositivos
+ * Script para visualizar los niveles de batería del dispositivo
+ * conectándose con la API del backend (Prueba_1)
  */
 
 // Elementos del DOM
@@ -11,6 +12,11 @@ const lastUpdate = document.getElementById('last-update');
 const refreshBtn = document.getElementById('refresh-btn');
 const autoUpdateToggle = document.getElementById('auto-update');
 const batteryHistoryElement = document.getElementById('battery-history');
+const deviceIdElement = document.getElementById('device-id');
+const deviceModelElement = document.getElementById('device-model');
+
+// URL de la API (asegúrate de que esté corriendo)
+const API_URL = 'http://localhost:5000';
 
 // Configuración
 const CONFIG = {
@@ -24,11 +30,28 @@ const CONFIG = {
 let currentLevel = 100;
 let batteryData = [];
 let updateTimer = null;
+let apiAvailable = true;
 
 // Inicializar la aplicación
 function initApp() {
-    // Establecer nivel inicial
-    updateBatteryLevel(generateRandomLevel());
+    // Intentar cargar datos reales de la API
+    fetchBatteryLevel()
+        .then(level => {
+            updateBatteryLevel(level);
+            apiAvailable = true;
+        })
+        .catch(error => {
+            console.error("No se pudo conectar con la API:", error);
+            apiAvailable = false;
+            // Si falla, usar el nivel simulado como fallback
+            updateBatteryLevel(generateRandomLevel());
+            
+            // Mostrar alerta de API no disponible
+            showApiAlert();
+        });
+    
+    // Cargar información del dispositivo
+    fetchDeviceInfo();
     
     // Iniciar el historial con valores simulados
     initializeHistory();
@@ -40,7 +63,58 @@ function initApp() {
     setupEventListeners();
 }
 
-// Generar nivel de batería aleatorio (para simulación)
+// Mostrar alerta si la API no está disponible
+function showApiAlert() {
+    const alertElement = document.createElement('div');
+    alertElement.className = 'alert alert-warning alert-dismissible fade show mt-3';
+    alertElement.setAttribute('role', 'alert');
+    alertElement.innerHTML = `
+        <strong>¡API no disponible!</strong> Se están usando datos simulados.
+        <p>Asegúrate de ejecutar <code>python Prueba_1/battery_api.py</code> para conectar con datos reales.</p>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    document.querySelector('.card-body').insertBefore(
+        alertElement, 
+        document.querySelector('.battery-container')
+    );
+}
+
+// Obtener nivel de batería desde la API
+async function fetchBatteryLevel() {
+    try {
+        const response = await fetch(`${API_URL}/battery`);
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+        const data = await response.json();
+        return data.level;
+    } catch (error) {
+        console.error("Error al obtener nivel de batería:", error);
+        throw error;
+    }
+}
+
+// Obtener información del dispositivo desde la API
+async function fetchDeviceInfo() {
+    try {
+        const response = await fetch(`${API_URL}/device-info`);
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+        const deviceInfo = await response.json();
+        
+        // Actualizar la información en la UI
+        deviceIdElement.textContent = deviceInfo.device_id;
+        deviceModelElement.textContent = deviceInfo.model;
+        
+    } catch (error) {
+        console.error("Error al obtener información del dispositivo:", error);
+        // Si falla, mantener la información por defecto
+    }
+}
+
+// Generar nivel de batería aleatorio (para fallback cuando la API no está disponible)
 function generateRandomLevel() {
     // Para mayor realismo, la batería tiende a bajar desde el nivel actual
     // con menos probabilidad de subir (simula descarga real)
@@ -157,7 +231,18 @@ function renderBatteryHistory() {
 function setupEventListeners() {
     // Botón de actualización manual
     refreshBtn.addEventListener('click', () => {
-        updateBatteryLevel(generateRandomLevel());
+        if (apiAvailable) {
+            fetchBatteryLevel()
+                .then(level => updateBatteryLevel(level))
+                .catch(error => {
+                    console.error("Error al actualizar batería:", error);
+                    // Si falla, usar datos simulados
+                    updateBatteryLevel(generateRandomLevel());
+                });
+        } else {
+            // Si la API no está disponible, usar datos simulados
+            updateBatteryLevel(generateRandomLevel());
+        }
     });
     
     // Toggle de actualización automática
@@ -174,7 +259,18 @@ function setupEventListeners() {
 function startAutoUpdate() {
     if (!updateTimer) {
         updateTimer = setInterval(() => {
-            updateBatteryLevel(generateRandomLevel());
+            if (apiAvailable) {
+                fetchBatteryLevel()
+                    .then(level => updateBatteryLevel(level))
+                    .catch(error => {
+                        console.error("Error en actualización automática:", error);
+                        // Si falla, usar datos simulados
+                        updateBatteryLevel(generateRandomLevel());
+                    });
+            } else {
+                // Si la API no está disponible, usar datos simulados
+                updateBatteryLevel(generateRandomLevel());
+            }
         }, CONFIG.updateInterval);
     }
 }

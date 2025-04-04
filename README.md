@@ -1,70 +1,17 @@
-# Sistema de Monitoreo de Dispositivos
-
-Este proyecto consiste en un sistema de monitoreo que incluye seguimiento de localización GPS, nivel de batería y detalles del dispositivo.
-
-## 🚀 Características
-
-- Monitoreo en tiempo real del nivel de batería
-- Visualización de ubicación en mapa interactivo
-- Sistema de alertas para nivel bajo de batería
-
-## 📋 Requisitos Previos
-
-- Python 3.8 o superior
-- Navegador web moderno
-- Node.js (opcional, para servidor local)
-
-## 🔧 Instalación
-
-1. Clonar el repositorio
-```bash
-git clone https://github.com/TuliEscobar/prueba_trakii
-cd prueba_trakii
-```
-
-2. Instalar dependencias de Python
-```bash
-pip install -r requirements.txt
-```
-
-3. Instalar dependencias web (si aplica)
-```bash
-npm install
-```
-
-## 🚀 Ejecución Local
-
-1. Iniciar el monitor de batería:
-```bash
-python monitor/battery_monitor.py
-```
-
-2. Abrir el archivo index.html en tu navegador web preferido
-   
-correr python -m http.server
-```bash
-correr python -m http.server
-```
-ir a:
-```bash
-http://localhost:8000/Prueba_2/
-```
-
-
-## 🛠️ Tecnologías Utilizadas
-
-- Python para el backend y monitoreo
-- Leaflet.js para mapas interactivos
-- HTML5, CSS3 y JavaScript para la interfaz web
-- Bootstrap para la barra de navegación y estilos
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE.md](LICENSE.md) para más detalles 
-
 # Sistema de Monitoreo de Dispositivos Trakii
 
-Este proyecto consiste en un sistema completo para el monitoreo de dispositivos GPS, incluyendo seguimiento de ubicación, monitorización de nivel de batería y gestión de información del dispositivo.
+Este proyecto implementa un sistema completo para el monitoreo de dispositivos GPS, incluyendo seguimiento de ubicación, visualización del nivel de batería y gestión de información detallada del dispositivo.
+
+## 📑 Índice
+- [Características](#-características-principales)
+- [Requisitos](#-requisitos-previos)
+- [Instalación](#-instalación)
+- [Estructura del Proyecto](#-estructura-del-proyecto)
+- [Ejecución](#-ejecución-local)
+- [Componente de Batería](#-componente-de-nivel-de-batería)
+- [Integración Backend-Frontend](#-integración-backend-frontend)
+- [Tecnologías Utilizadas](#-tecnologías-utilizadas)
+- [Licencia](#-licencia)
 
 ## 🚀 Características Principales
 
@@ -72,96 +19,117 @@ Este proyecto consiste en un sistema completo para el monitoreo de dispositivos 
 - **Seguimiento de Ubicación GPS**: Mapa interactivo que muestra la ubicación actual del dispositivo
 - **Panel Multi-Vista**: Interfaz con navegación entre diferentes secciones del sistema
 - **Diseño Responsivo**: Adaptado para funcionar en dispositivos móviles y de escritorio
+- **Integración Backend-Frontend**: El componente de batería se conecta a un backend real usando la API
 
 ## 📋 Requisitos Previos
 
 - Navegador web moderno con soporte para JavaScript ES6+
-- Conexión a internet para cargar las librerías externas
-- Python 3.8+ (para ejecutar los componentes de backend, opcional)
+- Conexión a internet para cargar las bibliotecas externas (Bootstrap, Leaflet)
+- Python 3.8+ para ejecutar los componentes de backend
+- Módulos de Python: Flask y Flask-CORS
 
 ## 🔧 Instalación
 
-1. Clonar el repositorio
-```bash
-git clone https://github.com/tu-usuario/prueba-trakii.git
-cd prueba-trakii
-```
+1. **Clonar el repositorio**
+   ```bash
+   git clone https://github.com/TuliEscobar/prueba_trakii.git
+   cd prueba_trakii
+   ```
 
-2. No requiere instalación adicional para la parte frontend. Para el backend:
-```bash
-cd Prueba_1
-python -m pip install -r requirements.txt
-```
+2. **Instalar dependencias para la API de batería**
+   ```bash
+   cd Prueba_1
+   pip install -r requirements.txt
+   ```
 
 ## 💻 Estructura del Proyecto
 
 ```
-prueba-trakii/
+sistema-monitoreo-dispositivos/
 ├── Prueba_1/
-│   └── Prueba_1_trakii.py  # Backend para monitoreo de batería
+│   ├── Prueba_1_trakii.py  # Lógica de monitoreo de batería
+│   ├── battery_api.py      # API para exponer los datos de batería
+│   └── requirements.txt    # Dependencias de Python
 ├── Prueba_2/
 │   └── index.html          # Mapa interactivo con Leaflet
 ├── Prueba_3/
 │   ├── index.html          # Componente visual de nivel de batería
 │   ├── styles.css          # Estilos del componente
-│   └── script.js           # Lógica del componente de batería
+│   └── script.js           # Lógica del componente que consume la API
 └── README.md
 ```
 
 ## 🚀 Ejecución Local
 
-### Componente de Batería (Prueba_3)
-1. Abre el archivo `Prueba_3/index.html` en tu navegador
-2. Observa como el nivel de batería se actualiza automáticamente cada 5 segundos
-3. Prueba las funciones manuales como "Actualizar Ahora" y "Actualización Auto"
+### 1. Iniciar la API de Batería
 
-### Monitoreo de Batería Backend (Prueba_1)
+Primero, debemos iniciar la API que expone los datos de la función `get_battery_level()`:
+
 ```bash
 cd Prueba_1
-python Prueba_1_trakii.py
+python battery_api.py
 ```
 
-### Mapa GPS (Prueba_2)
-1. Abre el archivo `Prueba_2/index.html` en tu navegador
-2. Observa el mapa con la ubicación del dispositivo
+Esto iniciará un servidor en `http://localhost:5000` con los siguientes endpoints:
+- `/battery` - Devuelve el nivel actual de batería
+- `/device-info` - Devuelve información del dispositivo
+
+### 2. Acceder a los Componentes Web
+
+Hay dos formas de acceder a los componentes web:
+
+#### Método 1: Abrir directamente los archivos HTML
+- Abre `Prueba_2/index.html` para ver el mapa interactivo
+- Abre `Prueba_3/index.html` para ver el componente de batería conectado a la API
+
+#### Método 2: Usar un servidor web local
+```bash
+python -m http.server
+```
+Y navega a:
+- http://localhost:8000/Prueba_2/ - Para ver el mapa
+- http://localhost:8000/Prueba_3/ - Para ver el componente de batería
 
 ## 📱 Componente de Nivel de Batería
 
-El componente de nivel de batería (Prueba_3) incluye las siguientes características:
+El componente de nivel de batería (Prueba_3) ofrece las siguientes funcionalidades:
 
-- **Visualización Dinámica**: Representación visual de batería que cambia según el nivel de carga
-- **Indicadores de Color**: 
+- **Conexión con Backend Real**: Utiliza la función `get_battery_level()` del Reto 1 a través de la API
+- **Gestión de Errores**: Si la API no está disponible, muestra una alerta y usa datos simulados como respaldo
+- **Indicadores de Color Dinámicos**:
   - Verde (>40%): Nivel óptimo
   - Amarillo (20-40%): Nivel bajo
-  - Rojo (<20%): Nivel crítico, con efecto de parpadeo
-- **Actualización en Tiempo Real**: Actualización automática cada 5 segundos
-- **Control Manual**: Botón para actualizar manualmente y toggle para activar/desactivar actualizaciones
-- **Historial Visual**: Representación gráfica de los últimos niveles de batería
-- **Información Detallada**: Muestra ID del dispositivo, modelo y hora de última actualización
+  - Rojo (<20%): Nivel crítico con efecto de parpadeo para alertar al usuario
+- **Actualización Automática**: Consulta la API cada 5 segundos para obtener datos actualizados
+- **Control Manual**: Incluye un botón para actualizar manualmente y un interruptor para activar/desactivar la actualización automática
+- **Historial Visual**: Muestra un registro gráfico de los últimos niveles de batería
 
-## 🖥️ Interfaz de Usuario
+## 🔌 Integración Backend-Frontend
 
-La aplicación cuenta con una barra de navegación que permite acceder a tres vistas principales:
+La integración entre el backend (Prueba_1) y el frontend (Prueba_3) se implementa mediante:
 
-1. **Localización**: Muestra el mapa interactivo con la ubicación actual del dispositivo
-2. **Batería**: Visualiza el nivel actual de batería con alertas visuales
-3. **Detalles**: Información detallada sobre el dispositivo
+1. **API REST**: Un servidor Flask que expone los datos del monitor de batería
+2. **CORS Habilitado**: Permite que el frontend acceda a los datos desde cualquier origen
+3. **Fetch API**: El frontend utiliza JavaScript moderno para consultar los datos
+4. **Manejo de Errores**: Sistema de fallback para mantener la funcionalidad aunque la API no esté disponible
 
 ## 🛠️ Tecnologías Utilizadas
 
-- **Frontend**:
-  - HTML5, CSS3 y JavaScript ES6+
-  - Bootstrap 5 para UI responsiva
-  - Leaflet.js para mapas interactivos
-  - Chart.js para visualización de datos
-- **Backend**:
-  - Python para lógica de monitoreo
-  - Módulos time y random para simulación
+### Frontend
+- HTML5, CSS3 y JavaScript ES6+
+- Bootstrap 5 para la interfaz de usuario responsiva
+- Leaflet.js para mapas interactivos
+- Fetch API para comunicación con el backend
+
+### Backend
+- Python para la lógica de monitoreo
+- Flask y Flask-CORS para crear la API REST
+- Módulos time y random para la simulación de datos
 
 ## 📄 Licencia
 
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE.md](LICENSE.md) para más detalles.
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
 
-## ✨ Contribuciones
+---
 
-Las contribuciones son bienvenidas. Por favor, abre un issue primero para discutir los cambios que te gustaría realizar. 
+© 2025 Sistema de Monitoreo de Dispositivos Trakii 
