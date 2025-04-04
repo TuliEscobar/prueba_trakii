@@ -9,6 +9,7 @@ Este proyecto implementa un sistema completo para el monitoreo de dispositivos G
 - [Estructura del Proyecto](#-estructura-del-proyecto)
 - [Ejecución](#-ejecución-local)
 - [Componente de Batería](#-componente-de-nivel-de-batería)
+- [Panel de Detalles del Dispositivo](#-panel-de-detalles-del-dispositivo)
 - [Integración Backend-Frontend](#-integración-backend-frontend)
 - [Tecnologías Utilizadas](#-tecnologías-utilizadas)
 - [Licencia](#-licencia)
@@ -20,6 +21,7 @@ Este proyecto implementa un sistema completo para el monitoreo de dispositivos G
 - **Panel Multi-Vista**: Interfaz con navegación entre diferentes secciones del sistema
 - **Diseño Responsivo**: Adaptado para funcionar en dispositivos móviles y de escritorio
 - **Integración Backend-Frontend**: El componente de batería se conecta a un backend real usando la API
+- **Geocodificación Inversa**: Conversión de coordenadas GPS a direcciones físicas legibles
 
 ## 📋 Requisitos Previos
 
@@ -56,6 +58,10 @@ sistema-monitoreo-dispositivos/
 │   ├── index.html          # Componente visual de nivel de batería
 │   ├── styles.css          # Estilos del componente
 │   └── script.js           # Lógica del componente que consume la API
+├── Prueba_4/
+│   ├── index.html          # Panel de detalles con geocodificación
+│   ├── styles.css          # Estilos del panel
+│   └── script.js           # Lógica para obtener dirección física
 └── README.md
 ```
 
@@ -81,6 +87,7 @@ Hay dos formas de acceder a los componentes web:
 #### Método 1: Abrir directamente los archivos HTML
 - Abre `Prueba_2/index.html` para ver el mapa interactivo
 - Abre `Prueba_3/index.html` para ver el componente de batería conectado a la API
+- Abre `Prueba_4/index.html` para ver el panel de detalles con geocodificación
 
 #### Método 2: Usar un servidor web local
 ```bash
@@ -89,6 +96,7 @@ python -m http.server
 Y navega a:
 - http://localhost:8000/Prueba_2/ - Para ver el mapa
 - http://localhost:8000/Prueba_3/ - Para ver el componente de batería
+- http://localhost:8000/Prueba_4/ - Para ver el panel de detalles
 
 ## 📱 Componente de Nivel de Batería
 
@@ -104,14 +112,32 @@ El componente de nivel de batería (Prueba_3) ofrece las siguientes funcionalida
 - **Control Manual**: Incluye un botón para actualizar manualmente y un interruptor para activar/desactivar la actualización automática
 - **Historial Visual**: Muestra un registro gráfico de los últimos niveles de batería
 
+## 🗺️ Panel de Detalles del Dispositivo
+
+El panel de detalles del dispositivo (Prueba_4) incluye las siguientes características:
+
+- **Mapa Interactivo**: Visualización de la ubicación del dispositivo con Leaflet.js
+- **Geocodificación Inversa**: Conversión de coordenadas GPS a direcciones físicas legibles usando Nominatim (OpenStreetMap)
+- **Información Detallada**:
+  - Coordenadas exactas (latitud/longitud)
+  - Dirección física completa (calle, colonia, ciudad, estado, país)
+  - Número de serie del dispositivo
+  - Modelo y versión de firmware
+  - Estado de conexión con indicador visual
+- **Indicador de Estado**: Muestra visualmente si el dispositivo está conectado o desconectado
+- **Nivel de Batería**: Visualización del nivel de batería actual con indicadores de color
+- **Actualizaciones Automáticas**: Actualización periódica de la información cada 10 segundos
+- **Interfaz Responsiva**: Diseño adaptable a diferentes tamaños de pantalla
+
 ## 🔌 Integración Backend-Frontend
 
-La integración entre el backend (Prueba_1) y el frontend (Prueba_3) se implementa mediante:
+La integración entre el backend (Prueba_1) y el frontend (Prueba_3 y Prueba_4) se implementa mediante:
 
 1. **API REST**: Un servidor Flask que expone los datos del monitor de batería
 2. **CORS Habilitado**: Permite que el frontend acceda a los datos desde cualquier origen
 3. **Fetch API**: El frontend utiliza JavaScript moderno para consultar los datos
 4. **Manejo de Errores**: Sistema de fallback para mantener la funcionalidad aunque la API no esté disponible
+5. **Geocodificación**: Uso de APIs externas para transformar coordenadas en direcciones legibles
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -120,6 +146,7 @@ La integración entre el backend (Prueba_1) y el frontend (Prueba_3) se implemen
 - Bootstrap 5 para la interfaz de usuario responsiva
 - Leaflet.js para mapas interactivos
 - Fetch API para comunicación con el backend
+- Nominatim API para geocodificación inversa
 
 ### Backend
 - Python para la lógica de monitoreo
