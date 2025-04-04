@@ -1,0 +1,130 @@
+/* Estilos para el componente de batería */
+body {
+    background-color: #f5f8fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.card {
+    border-radius: 15px;
+    overflow: hidden;
+    border: none;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #4a6cf7, #2651de);
+    border-bottom: none;
+    padding: 1.25rem;
+}
+
+/* Estilos para la visualización de la batería */
+.battery-visual {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100px;
+    margin: 0 auto;
+}
+
+.battery-body {
+    width: 200px;
+    height: 100px;
+    border: 8px solid #333;
+    border-radius: 15px;
+    position: relative;
+    overflow: hidden;
+    background: #f1f1f1;
+}
+
+.battery-level {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(180deg, #4caf50, #2e7d32);
+    height: 100%;
+    transition: height 0.8s ease, background 0.8s ease;
+}
+
+.battery-cap {
+    width: 15px;
+    height: 40px;
+    background-color: #333;
+    border-radius: 0 5px 5px 0;
+    margin-left: -1px;
+}
+
+/* Diferentes estados de batería */
+.battery-high {
+    background: linear-gradient(180deg, #4caf50, #2e7d32);
+}
+
+.battery-medium {
+    background: linear-gradient(180deg, #ffc107, #ff8f00);
+}
+
+.battery-low {
+    background: linear-gradient(180deg, #f44336, #b71c1c);
+}
+
+/* Animaciones para la batería */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.battery-critical {
+    animation: pulse 1.5s infinite;
+}
+
+/* Estilos para el porcentaje de batería */
+#battery-percentage {
+    transition: color 0.3s ease;
+}
+
+.text-high {
+    color: #2e7d32;
+}
+
+.text-medium {
+    color: #ff8f00;
+}
+
+.text-low {
+    color: #b71c1c;
+}
+
+/* Historial de batería */
+.battery-history {
+    display: flex;
+    height: 50px;
+    overflow-x: hidden;
+    margin-top: 10px;
+    border-radius: 5px;
+    background-color: #f1f1f1;
+}
+
+.history-bar {
+    flex: 1;
+    min-width: 5px;
+    height: 100%;
+    margin: 0 1px;
+    transition: all 0.3s ease;
+}
+
+@media (max-width: 768px) {
+    .battery-body {
+        width: 150px;
+        height: 80px;
+    }
+    
+    #battery-percentage {
+        font-size: 2.5rem !important;
+    }
+} 
