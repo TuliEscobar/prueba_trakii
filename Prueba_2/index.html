@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mapa Interactivo con Leaflet</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    #map { height: 100vh; width: 100%; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <!-- Script de Leaflet -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    // Función para cargar las coordenadas desde un archivo JSON
+    async function initMap() {
+      try {
+        const response = await fetch('coordenadas.json');
+        const data = await response.json();
+
+        const { lat, lng } = data;
+        const map = L.map('map').setView([lat, lng], 13);
+
+        // Capa de tiles (OpenStreetMap)
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Agregar marcador en las coordenadas obtenidas
+        const marker = L.marker([lat, lng]).addTo(map);
+        marker.bindPopup(`<b>Coordenadas:</b><br>Lat: ${lat}<br>Lng: ${lng}`).openPopup();
+      } catch (error) {
+        console.error("Error cargando las coordenadas:", error);
+        alert("No se pudo cargar el mapa correctamente.");
+      }
+    }
+
+    // Inicializar el mapa al cargar la página
+    window.onload = initMap;
+  </script>
+</body>
+</html>
