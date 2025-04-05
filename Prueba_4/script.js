@@ -22,9 +22,17 @@ const autoUpdateToggle = document.getElementById('auto-update');
 const API_URL = 'http://127.0.0.1:5000';
 
 // Coordenadas de Mallorca - Definidas en un solo lugar y reutilizadas
-const COORDS = {
+const MALLORCA_COORDS = {
     lat: 39.5696,
     lng: 2.6502
+};
+
+// Configuración de la aplicación
+const CONFIG = {
+    updateInterval: 5000,         // Intervalo de actualización en ms
+    locationVariation: 0.002,     // Variación para simular movimiento (~200m)
+    mapZoomLevel: 13,             // Nivel de zoom del mapa
+    toastDuration: 3000           // Duración de las notificaciones toast
 };
 
 // Variables globales
@@ -38,7 +46,7 @@ async function initApp() {
     clearInterface();
     
     // Inicializar mapa con las coordenadas de Mallorca
-    initMap(COORDS);
+    initMap(MALLORCA_COORDS);
     
     // Probar conexión con la API
     const apiStatus = await testApiConnection();
@@ -57,6 +65,33 @@ async function initApp() {
     // Iniciar actualización automática si está activado
     if (autoUpdateToggle.checked) {
         startAutoUpdate();
+    }
+}
+
+// Función centralizada para realizar llamadas a la API
+async function fetchAPI(endpoint) {
+    try {
+        console.log(`Obteniendo datos desde: ${API_URL}${endpoint}`);
+        
+        const response = await fetch(`${API_URL}${endpoint}`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
+            },
+            mode: 'cors'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log(`Datos recibidos de ${endpoint}:`, data);
+        return data;
+    } catch (error) {
+        console.error(`Error al obtener datos de ${endpoint}:`, error);
+        return null;
     }
 }
 
@@ -86,7 +121,7 @@ function initMap(coordinates) {
         const initialPosition = [coordinates.lat, coordinates.lng];
         
         // Crear mapa
-        map = L.map(mapElement).setView(initialPosition, 13);
+        map = L.map(mapElement).setView(initialPosition, CONFIG.mapZoomLevel);
         
         // Añadir capa de mapa
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -109,20 +144,8 @@ async function testApiConnection() {
     try {
         console.log("Probando conexión a la API...");
         
-        const response = await fetch(`${API_URL}/battery`, { 
-            method: 'GET',
-            headers: { 'Accept': 'application/json' },
-            mode: 'cors',
-            cache: 'no-cache'
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Error HTTP: ${response.status}`);
-        }
-        
-        // Si llegamos aquí, la conexión fue exitosa
-        console.log("Conexión a la API establecida correctamente");
-        return true;
+        const data = await fetchAPI('/battery');
+        return data !== null;
     } catch (error) {
         console.error("Error al conectar con la API:", error);
         return false;
@@ -133,7 +156,7 @@ async function testApiConnection() {
 async function loadAllData() {
     console.log("-------------- INICIO DE CARGA DE DATOS --------------");
     console.log("API URL:", API_URL);
-    console.log("Coordenadas:", COORDS);
+    console.log("Coordenadas base:", MALLORCA_COORDS);
     
     let hasErrors = false;
     
@@ -150,7 +173,6 @@ async function loadAllData() {
         console.log("Solicitando información del dispositivo...");
         const deviceInfo = await getDeviceInfo();
         if (deviceInfo) {
-            console.log("Información del dispositivo recibida:", deviceInfo);
             updateDeviceInfo(deviceInfo);
         } else {
             console.error("No se recibió información del dispositivo");
@@ -161,7 +183,6 @@ async function loadAllData() {
         console.log("Solicitando información de batería...");
         const batteryData = await getBatteryData();
         if (batteryData) {
-            console.log("Datos de batería recibidos:", batteryData);
             updateBatteryInfo(batteryData);
         } else {
             console.error("No se recibieron datos de batería");
@@ -169,8 +190,8 @@ async function loadAllData() {
         }
         
         // 4. Usar las coordenadas definidas al inicio
-        console.log("Usando coordenadas de Mallorca");
-        updateLocationInfo(COORDS);
+        console.log("Usando coordenadas de Mallorca con variación");
+        updateLocationInfo(MALLORCA_COORDS);
         
         // 5. Actualizar marca de tiempo
         updateTimestamp();
@@ -189,56 +210,12 @@ async function loadAllData() {
 
 // Obtener información del dispositivo
 async function getDeviceInfo() {
-    try {
-        console.log("Obteniendo información del dispositivo desde:", API_URL + "/device-info");
-        
-        const response = await fetch(`${API_URL}/device-info`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Cache-Control': 'no-cache'
-            },
-            mode: 'cors'
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Error HTTP: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log("Información del dispositivo recibida:", data);
-        return data;
-    } catch (error) {
-        console.error("Error al obtener información del dispositivo:", error);
-        return null;
-    }
+    return await fetchAPI('/device-info');
 }
 
 // Obtener datos de batería
 async function getBatteryData() {
-    try {
-        console.log("Obteniendo nivel de batería desde:", API_URL + "/battery");
-        
-        const response = await fetch(`${API_URL}/battery`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Cache-Control': 'no-cache'
-            },
-            mode: 'cors'
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Error HTTP: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log("Datos de batería recibidos:", data);
-        return data;
-    } catch (error) {
-        console.error("Error al obtener nivel de batería:", error);
-        return null;
-    }
+    return await fetchAPI('/battery');
 }
 
 // Actualizar información del dispositivo en la interfaz
@@ -324,7 +301,7 @@ function updateLocationInfo(locationData) {
     
     try {
         // Generar una pequeña variación aleatoria en las coordenadas (simular movimiento)
-        const variation = 0.002; // Aproximadamente 200 metros
+        const variation = CONFIG.locationVariation;
         const randomLat = locationData.lat + (Math.random() - 0.5) * variation;
         const randomLng = locationData.lng + (Math.random() - 0.5) * variation;
         
@@ -345,13 +322,14 @@ function updateLocationInfo(locationData) {
         // Actualizar marcador en el mapa
         const newPosition = [randomLat, randomLng];
         marker.setLatLng(newPosition);
-        map.setView(newPosition, 13);
+        map.setView(newPosition, CONFIG.mapZoomLevel);
         
         // Actualizar popup con información
         marker.setPopupContent(`
             <b>Ubicación del dispositivo</b><br>
             Latitud: ${randomLat.toFixed(6)}<br>
             Longitud: ${randomLng.toFixed(6)}<br>
+            <small><i>Simulando movimiento del dispositivo</i></small>
         `).openPopup();
         
         // Obtener dirección
@@ -425,14 +403,14 @@ function updateTimestamp() {
 // Iniciar actualización automática
 function startAutoUpdate() {
     if (!updateTimer) {
-        updateTimer = setInterval(loadAllData, 5000); // Actualizar cada 5 segundos
-        console.log("Actualizaciones automáticas iniciadas (cada 5 segundos)");
+        updateTimer = setInterval(loadAllData, CONFIG.updateInterval);
+        console.log(`Actualizaciones automáticas iniciadas (cada ${CONFIG.updateInterval/1000} segundos)`);
         
         // Mostrar indicador de actualización automática
         const statusBadge = document.createElement('span');
         statusBadge.id = 'auto-update-badge';
         statusBadge.className = 'badge bg-info ms-2';
-
+        statusBadge.innerHTML = 'Simulando movimiento';
         
         // Agregar al lado del título
         const headerTitle = document.querySelector('.details-header h2');
@@ -472,8 +450,13 @@ function toggleAutoUpdate() {
 
 // Mostrar mensaje de éxito
 function showSuccessMessage(message) {
+    showToast(message, 'success');
+}
+
+// Mostrar notificación toast
+function showToast(message, type = 'info') {
     const toast = document.createElement('div');
-    toast.className = 'toast align-items-center text-white bg-success position-fixed bottom-0 end-0 m-3';
+    toast.className = `toast align-items-center text-white bg-${type} position-fixed bottom-0 end-0 m-3`;
     toast.setAttribute('role', 'alert');
     toast.setAttribute('aria-live', 'assertive');
     toast.setAttribute('aria-atomic', 'true');
@@ -489,7 +472,7 @@ function showSuccessMessage(message) {
     document.body.appendChild(toast);
     const bsToast = new bootstrap.Toast(toast, {
         autohide: true,
-        delay: 3000
+        delay: CONFIG.toastDuration
     });
     
     bsToast.show();
