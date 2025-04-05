@@ -20,7 +20,12 @@ const autoUpdateToggle = document.getElementById('auto-update');
 
 // URLs de API
 const API_URL = 'http://127.0.0.1:5000';
-const LOCATION_JSON_PATH = './coordenadas.json';
+
+// Coordenadas de Mallorca - Definidas en un solo lugar y reutilizadas
+const COORDS = {
+    lat: 39.5696,
+    lng: 2.6502
+};
 
 // Variables globales
 let map;
@@ -32,8 +37,8 @@ async function initApp() {
     // Limpiar contenido antiguo
     clearInterface();
     
-    // Inicializar mapa
-    initMap();
+    // Inicializar mapa con las coordenadas de Mallorca
+    initMap(COORDS);
     
     // Probar conexión con la API
     const apiStatus = await testApiConnection();
@@ -73,12 +78,12 @@ function clearInterface() {
 }
 
 // Inicializar mapa
-function initMap() {
+function initMap(coordinates) {
     console.log("Inicializando mapa...");
     
     try {
-        // Posición inicial (Madrid)
-        const initialPosition = [40.4168, -3.7038];
+        // Posición inicial desde las coordenadas proporcionadas
+        const initialPosition = [coordinates.lat, coordinates.lng];
         
         // Crear mapa
         map = L.map(mapElement).setView(initialPosition, 13);
@@ -92,7 +97,7 @@ function initMap() {
         marker = L.marker(initialPosition).addTo(map);
         marker.bindPopup("Cargando datos del dispositivo...").openPopup();
         
-        console.log("Mapa inicializado correctamente");
+        console.log("Mapa inicializado correctamente con coordenadas:", coordinates);
     } catch (error) {
         console.error("Error al inicializar el mapa:", error);
         showErrorPanel("Error al inicializar el mapa: " + error.message);
@@ -128,7 +133,7 @@ async function testApiConnection() {
 async function loadAllData() {
     console.log("-------------- INICIO DE CARGA DE DATOS --------------");
     console.log("API URL:", API_URL);
-    console.log("JSON Location:", LOCATION_JSON_PATH);
+    console.log("Coordenadas:", COORDS);
     
     let hasErrors = false;
     
@@ -163,15 +168,9 @@ async function loadAllData() {
             hasErrors = true;
         }
         
-        // 4. Obtener ubicación (usar coordenadas incrustadas en lugar del archivo)
-        console.log("Configurando datos de ubicación...");
-        // Usar coordenadas directamente para evitar problemas de carga de archivos
-        const locationData = {
-            lat: 39.5696,
-            lng: 2.6502
-        };
-        console.log("Usando datos de ubicación:", locationData);
-        updateLocationInfo(locationData);
+        // 4. Usar las coordenadas definidas al inicio
+        console.log("Usando coordenadas de Mallorca");
+        updateLocationInfo(COORDS);
         
         // 5. Actualizar marca de tiempo
         updateTimestamp();
@@ -239,33 +238,6 @@ async function getBatteryData() {
     } catch (error) {
         console.error("Error al obtener nivel de batería:", error);
         return null;
-    }
-}
-
-// Obtener datos de ubicación desde el archivo local
-async function getLocationFromFile() {
-    try {
-        console.log("Obteniendo ubicación desde archivo local:", LOCATION_JSON_PATH);
-        
-        // Intentar leer el archivo JSON
-        const response = await fetch(LOCATION_JSON_PATH);
-        
-        if (!response.ok) {
-            throw new Error(`Error HTTP: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log("Datos de ubicación recibidos:", data);
-        return data;
-    } catch (error) {
-        console.error("Error al obtener ubicación desde archivo:", error);
-        
-        // Si hay un error al cargar el archivo, usar coordenadas hardcodeadas
-        console.log("Usando coordenadas predefinidas como alternativa");
-        return {
-            lat: 39.5696,
-            lng: 2.6502
-        };
     }
 }
 
@@ -351,26 +323,39 @@ function updateLocationInfo(locationData) {
     }
     
     try {
-        const lat = locationData.lat;
-        const lng = locationData.lng;
+        // Generar una pequeña variación aleatoria en las coordenadas (simular movimiento)
+        const variation = 0.002; // Aproximadamente 200 metros
+        const randomLat = locationData.lat + (Math.random() - 0.5) * variation;
+        const randomLng = locationData.lng + (Math.random() - 0.5) * variation;
+        
+        // Crear objeto con coordenadas ligeramente alteradas
+        const variedLocation = {
+            lat: randomLat,
+            lng: randomLng,
+            originalLat: locationData.lat,
+            originalLng: locationData.lng
+        };
+        
+        console.log("Coordenadas originales:", locationData.lat.toFixed(6), locationData.lng.toFixed(6));
+        console.log("Coordenadas variadas:", randomLat.toFixed(6), randomLng.toFixed(6));
         
         // Actualizar coordenadas en la interfaz
-        coordinatesElement.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        coordinatesElement.textContent = `${randomLat.toFixed(6)}, ${randomLng.toFixed(6)}`;
         
         // Actualizar marcador en el mapa
-        const newPosition = [lat, lng];
+        const newPosition = [randomLat, randomLng];
         marker.setLatLng(newPosition);
         map.setView(newPosition, 13);
         
         // Actualizar popup con información
         marker.setPopupContent(`
             <b>Ubicación del dispositivo</b><br>
-            Latitud: ${lat.toFixed(6)}<br>
-            Longitud: ${lng.toFixed(6)}
+            Latitud: ${randomLat.toFixed(6)}<br>
+            Longitud: ${randomLng.toFixed(6)}<br>
         `).openPopup();
         
         // Obtener dirección
-        getAddress(lat, lng);
+        getAddress(randomLat, randomLng);
         
     } catch (error) {
         console.error("Error al actualizar mapa:", error);
@@ -442,6 +427,18 @@ function startAutoUpdate() {
     if (!updateTimer) {
         updateTimer = setInterval(loadAllData, 5000); // Actualizar cada 5 segundos
         console.log("Actualizaciones automáticas iniciadas (cada 5 segundos)");
+        
+        // Mostrar indicador de actualización automática
+        const statusBadge = document.createElement('span');
+        statusBadge.id = 'auto-update-badge';
+        statusBadge.className = 'badge bg-info ms-2';
+
+        
+        // Agregar al lado del título
+        const headerTitle = document.querySelector('.details-header h2');
+        if (headerTitle && !document.getElementById('auto-update-badge')) {
+            headerTitle.appendChild(statusBadge);
+        }
     }
 }
 
@@ -451,16 +448,54 @@ function stopAutoUpdate() {
         clearInterval(updateTimer);
         updateTimer = null;
         console.log("Actualizaciones automáticas detenidas");
+        
+        // Eliminar indicador
+        const statusBadge = document.getElementById('auto-update-badge');
+        if (statusBadge) {
+            statusBadge.remove();
+        }
     }
 }
 
 // Alternar actualización automática
 function toggleAutoUpdate() {
     if (autoUpdateToggle.checked) {
+        console.log("Activando simulación de movimiento");
         startAutoUpdate();
+        showSuccessMessage("Simulación de movimiento activada");
     } else {
+        console.log("Desactivando simulación de movimiento");
         stopAutoUpdate();
+        showSuccessMessage("Simulación de movimiento desactivada");
     }
+}
+
+// Mostrar mensaje de éxito
+function showSuccessMessage(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-success position-fixed bottom-0 end-0 m-3';
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    toast.style.zIndex = '9999';
+    
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast, {
+        autohide: true,
+        delay: 3000
+    });
+    
+    bsToast.show();
+    
+    // Auto eliminar cuando se oculta
+    toast.addEventListener('hidden.bs.toast', () => toast.remove());
 }
 
 // Mostrar panel de error
