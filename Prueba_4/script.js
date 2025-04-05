@@ -1,5 +1,5 @@
 /**
- * Panel de Detalles del Dispositivo - Versión Simplificada
+ * Panel de Detalles del Dispositivo - Versión para Windows
  */
 
 // Elementos del DOM
@@ -20,7 +20,7 @@ const autoUpdateToggle = document.getElementById('auto-update');
 
 // URLs de API
 const API_URL = 'http://127.0.0.1:5000';
-const LOCATION_JSON_URL = './coordenadas.json';
+const LOCATION_JSON_PATH = './coordenadas.json';
 
 // Variables globales
 let map;
@@ -28,20 +28,19 @@ let marker;
 let updateTimer = null;
 
 // Inicializar la aplicación
-function initApp() {
-    // Mostrar mensaje de inicio
-    showStatus("Inicializando aplicación...");
-    
-    // Limpiar datos antiguos estáticos
-    deviceIdElement.textContent = "Cargando...";
-    serialNumberElement.textContent = "Cargando...";
-    deviceModelElement.textContent = "Cargando...";
-    firmwareElement.textContent = "Cargando...";
-    batteryLevelElement.textContent = "Cargando...";
-    batteryStatusElement.textContent = "Cargando...";
+async function initApp() {
+    // Limpiar contenido antiguo
+    clearInterface();
     
     // Inicializar mapa
     initMap();
+    
+    // Probar conexión con la API
+    const apiStatus = await testApiConnection();
+    if (!apiStatus) {
+        showErrorPanel("No se pudo conectar con la API. Asegúrate de que battery_api.py y prueba_1_trakii.py están en ejecución.");
+        return;
+    }
     
     // Cargar datos iniciales
     loadAllData();
@@ -56,13 +55,30 @@ function initApp() {
     }
 }
 
+// Limpiar la interfaz para nuevos datos
+function clearInterface() {
+    deviceIdElement.textContent = "Cargando...";
+    serialNumberElement.textContent = "Cargando...";
+    deviceModelElement.textContent = "Cargando...";
+    firmwareElement.textContent = "Cargando...";
+    batteryLevelElement.textContent = "Cargando...";
+    batteryStatusElement.textContent = "Cargando...";
+    coordinatesElement.textContent = "Cargando...";
+    addressElement.innerHTML = `
+        <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <span>Obteniendo dirección...</span>
+    `;
+}
+
 // Inicializar mapa
 function initMap() {
-    showStatus("Inicializando mapa...");
+    console.log("Inicializando mapa...");
     
     try {
-        // Posición inicial
-        const initialPosition = [19.4326, -99.1332];
+        // Posición inicial (Madrid)
+        const initialPosition = [40.4168, -3.7038];
         
         // Crear mapa
         map = L.map(mapElement).setView(initialPosition, 13);
@@ -76,119 +92,106 @@ function initMap() {
         marker = L.marker(initialPosition).addTo(map);
         marker.bindPopup("Cargando datos del dispositivo...").openPopup();
         
-        showStatus("Mapa inicializado correctamente");
+        console.log("Mapa inicializado correctamente");
     } catch (error) {
-        showError("Error al inicializar el mapa: " + error.message);
+        console.error("Error al inicializar el mapa:", error);
+        showErrorPanel("Error al inicializar el mapa: " + error.message);
+    }
+}
+
+// Probar conexión a la API
+async function testApiConnection() {
+    try {
+        console.log("Probando conexión a la API...");
+        
+        const response = await fetch(`${API_URL}/battery`, { 
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            mode: 'cors',
+            cache: 'no-cache'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+        
+        // Si llegamos aquí, la conexión fue exitosa
+        console.log("Conexión a la API establecida correctamente");
+        return true;
+    } catch (error) {
+        console.error("Error al conectar con la API:", error);
+        return false;
     }
 }
 
 // Cargar todos los datos
 async function loadAllData() {
-    showStatus("Cargando datos...");
+    console.log("-------------- INICIO DE CARGA DE DATOS --------------");
+    console.log("API URL:", API_URL);
+    console.log("JSON Location:", LOCATION_JSON_PATH);
+    
+    let hasErrors = false;
     
     try {
-        // 1. Obtener nivel de batería 
-        let batteryData = null;
-        try {
-            batteryData = await getBatteryData();
-            showStatus("Datos de batería obtenidos: " + JSON.stringify(batteryData));
-        } catch (batteryError) {
-            showError("Error al obtener batería: " + batteryError.message);
-            // Fallback
-            batteryData = {
-                level: Math.floor(Math.random() * 100),
-                status: "normal"
-            };
+        // 1. Verificar que la API está disponible
+        const apiTest = await testApiConnection();
+        if (!apiTest) {
+            console.error("API no disponible, no se continuará con la carga de datos");
+            showErrorPanel("La API no está respondiendo. Asegúrate de que battery_api.py está en ejecución en http://127.0.0.1:5000");
+            return;
         }
         
         // 2. Obtener información del dispositivo
-        let deviceInfo = null;
-        try {
-            deviceInfo = await getDeviceInfo();
-            showStatus("Datos del dispositivo obtenidos: " + JSON.stringify(deviceInfo));
-        } catch (deviceError) {
-            showError("Error al obtener información del dispositivo: " + deviceError.message);
-            // Fallback
-            deviceInfo = {
-                device_id: "ERROR-ID",
-                model: "Sin conexión",
-                firmware_version: "N/A",
-                status: "Inactive"
-            };
-        }
-        
-        // 3. Obtener datos de ubicación
-        let locationData = null;
-        try {
-            locationData = await getLocationData();
-            showStatus("Datos de ubicación obtenidos: " + JSON.stringify(locationData));
-        } catch (locationError) {
-            showError("Error al obtener ubicación: " + locationError.message);
-            // Fallback
-            locationData = {
-                lat: 39.5696,
-                lng: 2.6502
-            };
-        }
-        
-        // 4. Actualizar la interfaz con todos los datos
+        console.log("Solicitando información del dispositivo...");
+        const deviceInfo = await getDeviceInfo();
         if (deviceInfo) {
+            console.log("Información del dispositivo recibida:", deviceInfo);
             updateDeviceInfo(deviceInfo);
+        } else {
+            console.error("No se recibió información del dispositivo");
+            hasErrors = true;
         }
         
+        // 3. Obtener nivel de batería
+        console.log("Solicitando información de batería...");
+        const batteryData = await getBatteryData();
         if (batteryData) {
+            console.log("Datos de batería recibidos:", batteryData);
             updateBatteryInfo(batteryData);
+        } else {
+            console.error("No se recibieron datos de batería");
+            hasErrors = true;
         }
         
-        if (locationData) {
-            updateLocationInfo(locationData);
-        }
+        // 4. Obtener ubicación (usar coordenadas incrustadas en lugar del archivo)
+        console.log("Configurando datos de ubicación...");
+        // Usar coordenadas directamente para evitar problemas de carga de archivos
+        const locationData = {
+            lat: 39.5696,
+            lng: 2.6502
+        };
+        console.log("Usando datos de ubicación:", locationData);
+        updateLocationInfo(locationData);
         
         // 5. Actualizar marca de tiempo
         updateTimestamp();
         
-        showStatus("Todos los datos cargados correctamente");
-    } catch (error) {
-        showError("Error general al cargar datos: " + error.message);
-    }
-}
-
-// Obtener nivel de batería de la API
-async function getBatteryData() {
-    try {
-        showStatus("Intentando obtener datos de batería desde: " + API_URL + "/battery");
-        
-        const response = await fetch(`${API_URL}/battery`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Cache-Control': 'no-cache'
-            },
-            mode: 'cors'
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP Error: ${response.status}`);
+        // 6. Mostrar errores si los hubo
+        if (hasErrors) {
+            showErrorPanel("Se produjeron algunos errores al cargar los datos. Revisa la consola para más detalles.");
         }
         
-        const data = await response.json();
-        showStatus("Datos de batería recibidos correctamente: " + JSON.stringify(data));
-        return data;
+        console.log("-------------- FIN DE CARGA DE DATOS --------------");
     } catch (error) {
-        showError("Error al obtener batería: " + error.message);
-        // Devolver datos ficticios como fallback
-        return {
-            level: Math.floor(Math.random() * 100),
-            status: "critical",
-            timestamp: new Date().toISOString()
-        };
+        console.error("Error general al cargar datos:", error);
+        showErrorPanel("Error al cargar datos: " + error.message);
     }
 }
 
-// Obtener información del dispositivo de la API
+// Obtener información del dispositivo
 async function getDeviceInfo() {
     try {
-        showStatus("Intentando obtener información del dispositivo desde: " + API_URL + "/device-info");
+        console.log("Obteniendo información del dispositivo desde:", API_URL + "/device-info");
         
         const response = await fetch(`${API_URL}/device-info`, {
             method: 'GET',
@@ -200,64 +203,70 @@ async function getDeviceInfo() {
         });
         
         if (!response.ok) {
-            throw new Error(`HTTP Error: ${response.status}`);
+            throw new Error(`Error HTTP: ${response.status}`);
         }
         
         const data = await response.json();
-        showStatus("Información del dispositivo recibida correctamente: " + JSON.stringify(data));
+        console.log("Información del dispositivo recibida:", data);
         return data;
     } catch (error) {
-        showError("Error al obtener info del dispositivo: " + error.message);
-        // Devolver datos ficticios como fallback
-        return {
-            device_id: "API-ERROR",
-            model: "Error de conexión",
-            firmware_version: "N/A",
-            status: "Inactive",
-            last_report: new Date().toISOString()
-        };
+        console.error("Error al obtener información del dispositivo:", error);
+        return null;
     }
 }
 
-// Obtener datos de ubicación del JSON
-async function getLocationData() {
-    showStatus("Intentando obtener ubicación desde: " + LOCATION_JSON_URL);
-    
-    // Intentar diferentes rutas para el archivo de coordenadas
-    const possiblePaths = [
-        './Prueba_2/coordenadas.json',
-        '../Prueba_2/coordenadas.json',
-        'Prueba_2/coordenadas.json',
-        '/Prueba_2/coordenadas.json',
-        'coordenadas.json'
-    ];
-    
-    // Tratar de usar coordenadas hardcodeadas si todo falla
-    const fallbackCoordinates = {
-        lat: 39.5696,
-        lng: 2.6502
-    };
-    
-    // Intentar acceder a cada posible ruta
-    for (const path of possiblePaths) {
-        try {
-            showStatus(`Probando ruta: ${path}`);
-            
-            const response = await fetch(path);
-            
-            if (response.ok) {
-                const data = await response.json();
-                showStatus(`Éxito obteniendo ubicación desde: ${path}`);
-                return data;
-            }
-        } catch (error) {
-            showError(`Fallo al obtener ubicación desde ${path}: ${error.message}`);
+// Obtener datos de batería
+async function getBatteryData() {
+    try {
+        console.log("Obteniendo nivel de batería desde:", API_URL + "/battery");
+        
+        const response = await fetch(`${API_URL}/battery`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
+            },
+            mode: 'cors'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
         }
+        
+        const data = await response.json();
+        console.log("Datos de batería recibidos:", data);
+        return data;
+    } catch (error) {
+        console.error("Error al obtener nivel de batería:", error);
+        return null;
     }
-    
-    // Si todas las rutas fallan, usar valores predeterminados
-    showStatus("Usando coordenadas predeterminadas como fallback");
-    return fallbackCoordinates;
+}
+
+// Obtener datos de ubicación desde el archivo local
+async function getLocationFromFile() {
+    try {
+        console.log("Obteniendo ubicación desde archivo local:", LOCATION_JSON_PATH);
+        
+        // Intentar leer el archivo JSON
+        const response = await fetch(LOCATION_JSON_PATH);
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log("Datos de ubicación recibidos:", data);
+        return data;
+    } catch (error) {
+        console.error("Error al obtener ubicación desde archivo:", error);
+        
+        // Si hay un error al cargar el archivo, usar coordenadas hardcodeadas
+        console.log("Usando coordenadas predefinidas como alternativa");
+        return {
+            lat: 39.5696,
+            lng: 2.6502
+        };
+    }
 }
 
 // Actualizar información del dispositivo en la interfaz
@@ -289,7 +298,12 @@ function updateDeviceInfo(deviceInfo) {
 function updateBatteryInfo(batteryData) {
     if (!batteryData) return;
     
-    const level = batteryData.level;
+    // Verificar que el nivel de batería sea un número
+    const level = parseInt(batteryData.level);
+    if (isNaN(level)) {
+        console.error("Nivel de batería no válido:", batteryData.level);
+        return;
+    }
     
     // Actualizar texto
     batteryLevelElement.textContent = `${level}%`;
@@ -297,22 +311,32 @@ function updateBatteryInfo(batteryData) {
     // Actualizar barra de progreso
     batteryLevelBarElement.style.width = `${level}%`;
     
-    // Determinar estado y color
+    // Determinar estado y color basado en el status de la API
     let statusText = "";
     let colorClass = "";
     
-    if (batteryData.status === "critical" || level <= 20) {
-        statusText = "Crítico";
-        colorClass = "bg-danger";
-        batteryStatusElement.className = "detail-value text-danger";
-    } else if (batteryData.status === "warning" || level <= 40) {
-        statusText = "Bajo";
-        colorClass = "bg-warning";
-        batteryStatusElement.className = "detail-value text-warning";
-    } else {
-        statusText = "Óptimo";
-        colorClass = "bg-success";
-        batteryStatusElement.className = "detail-value text-success";
+    // Usar directamente el estado que viene de la API
+    switch(batteryData.status) {
+        case "critical":
+            statusText = "Crítico";
+            colorClass = "bg-danger";
+            batteryStatusElement.className = "detail-value text-danger";
+            break;
+        case "warning":
+            statusText = "Bajo";
+            colorClass = "bg-warning";
+            batteryStatusElement.className = "detail-value text-warning";
+            break;
+        case "normal":
+            statusText = "Óptimo";
+            colorClass = "bg-success";
+            batteryStatusElement.className = "detail-value text-success";
+            break;
+        default:
+            // Fallback para estado desconocido
+            statusText = "Desconocido";
+            colorClass = "bg-secondary";
+            batteryStatusElement.className = "detail-value text-secondary";
     }
     
     batteryStatusElement.textContent = statusText;
@@ -322,7 +346,7 @@ function updateBatteryInfo(batteryData) {
 // Actualizar información de ubicación en la interfaz
 function updateLocationInfo(locationData) {
     if (!locationData || !locationData.lat || !locationData.lng) {
-        showStatus("Sin datos de ubicación válidos");
+        console.error("Datos de ubicación inválidos:", locationData);
         return;
     }
     
@@ -338,7 +362,7 @@ function updateLocationInfo(locationData) {
         marker.setLatLng(newPosition);
         map.setView(newPosition, 13);
         
-        // Actualizar popup con información básica
+        // Actualizar popup con información
         marker.setPopupContent(`
             <b>Ubicación del dispositivo</b><br>
             Latitud: ${lat.toFixed(6)}<br>
@@ -349,7 +373,7 @@ function updateLocationInfo(locationData) {
         getAddress(lat, lng);
         
     } catch (error) {
-        showError("Error al actualizar mapa: " + error.message);
+        console.error("Error al actualizar mapa:", error);
     }
 }
 
@@ -380,7 +404,6 @@ async function getAddress(lat, lng) {
         }
         
         const data = await response.json();
-        showStatus("Dirección obtenida");
         
         // Formatear dirección
         let address = "";
@@ -403,7 +426,7 @@ async function getAddress(lat, lng) {
         addressElement.innerHTML = address;
         
     } catch (error) {
-        showError("Error al obtener dirección: " + error.message);
+        console.error("Error al obtener dirección:", error);
         addressElement.innerHTML = "<span class='text-danger'>No se pudo obtener la dirección</span>";
     }
 }
@@ -417,8 +440,8 @@ function updateTimestamp() {
 // Iniciar actualización automática
 function startAutoUpdate() {
     if (!updateTimer) {
-        updateTimer = setInterval(loadAllData, 10000);
-        showStatus("Actualizaciones automáticas iniciadas");
+        updateTimer = setInterval(loadAllData, 5000); // Actualizar cada 5 segundos
+        console.log("Actualizaciones automáticas iniciadas (cada 5 segundos)");
     }
 }
 
@@ -427,7 +450,7 @@ function stopAutoUpdate() {
     if (updateTimer) {
         clearInterval(updateTimer);
         updateTimer = null;
-        showStatus("Actualizaciones automáticas detenidas");
+        console.log("Actualizaciones automáticas detenidas");
     }
 }
 
@@ -440,26 +463,25 @@ function toggleAutoUpdate() {
     }
 }
 
-// Mostrar mensaje de estado en la consola
-function showStatus(message) {
-    console.log(`[INFO] ${message}`);
-}
-
-// Mostrar error en la consola y en la interfaz si es crítico
-function showError(message) {
-    console.error(`[ERROR] ${message}`);
+// Mostrar panel de error
+function showErrorPanel(message) {
+    console.error(message);
     
-    // Mostrar error en la interfaz para facilitar la depuración
     const errorBox = document.createElement('div');
-    errorBox.className = 'alert alert-danger mt-2';
-    errorBox.role = 'alert';
-    errorBox.textContent = `Error: ${message}`;
+    errorBox.className = 'alert alert-danger m-3';
+    errorBox.innerHTML = `
+        <h5 class="alert-heading">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            Error
+        </h5>
+        <p>${message}</p>
+        <p class="mb-0">Asegúrate de que battery_api.py y prueba_1_trakii.py están en ejecución.</p>
+    `;
     
     // Añadir botón para cerrar
     const closeButton = document.createElement('button');
     closeButton.type = 'button';
     closeButton.className = 'btn-close';
-    closeButton.setAttribute('data-bs-dismiss', 'alert');
     closeButton.setAttribute('aria-label', 'Close');
     closeButton.onclick = function() {
         errorBox.remove();
@@ -467,18 +489,8 @@ function showError(message) {
     
     errorBox.appendChild(closeButton);
     
-    // Añadir a la página (como primer hijo del contenedor principal)
-    const container = document.querySelector('.container');
-    if (container) {
-        container.insertBefore(errorBox, container.firstChild);
-        
-        // Auto eliminar después de 10 segundos
-        setTimeout(() => {
-            if (errorBox.parentNode) {
-                errorBox.remove();
-            }
-        }, 10000);
-    }
+    // Añadir a la página
+    document.querySelector('.container-fluid').prepend(errorBox);
 }
 
 // Inicializar cuando el DOM esté listo
