@@ -21,10 +21,11 @@ const autoUpdateToggle = document.getElementById('auto-update');
 // URLs de API
 const API_URL = 'http://127.0.0.1:5000';
 
-// Coordenadas de Mallorca - Definidas en un solo lugar y reutilizadas
-const MALLORCA_COORDS = {
+// Coordenadas del dispositivo - Definidas en un solo lugar y reutilizadas
+const DISPOSITIVO_COORDS = {
     lat: 39.5696,
-    lng: 2.6502
+    lng: 2.6502,
+    device_id: 'TRAKII-001'  // Añadido ID del dispositivo a las coordenadas
 };
 
 // Configuración de la aplicación
@@ -45,8 +46,8 @@ async function initApp() {
     // Limpiar contenido antiguo
     clearInterface();
     
-    // Inicializar mapa con las coordenadas de Mallorca
-    initMap(MALLORCA_COORDS);
+    // Inicializar mapa con las coordenadas del dispositivo
+    initMap(DISPOSITIVO_COORDS);
     
     // Probar conexión con la API
     const apiStatus = await testApiConnection();
@@ -156,7 +157,7 @@ async function testApiConnection() {
 async function loadAllData() {
     console.log("-------------- INICIO DE CARGA DE DATOS --------------");
     console.log("API URL:", API_URL);
-    console.log("Coordenadas base:", MALLORCA_COORDS);
+    console.log("Coordenadas base:", DISPOSITIVO_COORDS);
     
     let hasErrors = false;
     
@@ -190,8 +191,8 @@ async function loadAllData() {
         }
         
         // 4. Usar las coordenadas definidas al inicio
-        console.log("Usando coordenadas de Mallorca con variación");
-        updateLocationInfo(MALLORCA_COORDS);
+        console.log("Usando coordenadas del dispositivo con variación");
+        updateLocationInfo(DISPOSITIVO_COORDS);
         
         // 5. Actualizar marca de tiempo
         updateTimestamp();
@@ -310,7 +311,8 @@ function updateLocationInfo(locationData) {
             lat: randomLat,
             lng: randomLng,
             originalLat: locationData.lat,
-            originalLng: locationData.lng
+            originalLng: locationData.lng,
+            device_id: locationData.device_id || 'Desconocido'
         };
         
         console.log("Coordenadas originales:", locationData.lat.toFixed(6), locationData.lng.toFixed(6));
@@ -326,7 +328,7 @@ function updateLocationInfo(locationData) {
         
         // Actualizar popup con información
         marker.setPopupContent(`
-            <b>Ubicación del dispositivo</b><br>
+            <b>Dispositivo: ${variedLocation.device_id}</b><br>
             Latitud: ${randomLat.toFixed(6)}<br>
             Longitud: ${randomLng.toFixed(6)}<br>
             <small><i>Simulando movimiento del dispositivo</i></small>
